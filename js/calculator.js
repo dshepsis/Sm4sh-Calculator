@@ -248,7 +248,7 @@ app.controller('calculator', function ($scope) {
                     $scope.is_smash = true;
                     $scope.charging_frames_type = attacker.name == "Donkey Kong" ? "Arm swings" : "Frames charged";
                     $scope.updateCharge();
-                    
+
                 }else{
                     $scope.charge_data = null;
                     $scope.charge_min = 0;
@@ -269,7 +269,7 @@ app.controller('calculator', function ($scope) {
             }
             $scope.checkSmashVisibility();
         }
-        
+
     }
 
     $scope.prev_hit_frame = function(){
@@ -496,7 +496,7 @@ app.controller('calculator', function ($scope) {
                 $scope.selected_move = null;
             }
         }
-        
+
         $scope.check();
         $scope.update();
     }
@@ -615,7 +615,27 @@ app.controller('calculator', function ($scope) {
 
         if (wbkb == 0) {
 			trainingkb = TrainingKB(target_percent + preDamage, base_damage, damage, set_weight ? 100 : target.attributes.weight, kbg, bkb, target.attributes.gravity * target.modifier.gravity, target.attributes.fall_speed * target.modifier.fall_speed, r, angle, in_air, windbox, electric, set_weight, stick);
-			vskb = VSKB(target_percent + (preDamage * StaleNegation(stale, ignoreStale)), base_damage, damage, set_weight ? 100 : target.attributes.weight, kbg, bkb, target.attributes.gravity * target.modifier.gravity, target.attributes.fall_speed * target.modifier.fall_speed, r, stale, ignoreStale, attacker_percent, angle, in_air, windbox, electric, set_weight, stick, launch_rate);
+			vskb = VSKB(
+				target_percent + (preDamage * StaleNegation(stale, ignoreStale)),
+				base_damage,
+				damage,
+				set_weight ? 100 : target.attributes.weight,
+				kbg,
+				bkb,
+				target.attributes.gravity * target.modifier.gravity,
+				target.attributes.fall_speed * target.modifier.fall_speed,
+				r,
+				stale,
+				ignoreStale,
+				attacker_percent,
+				angle,
+				in_air,
+				windbox,
+				electric,
+				set_weight,
+				stick,
+				launch_rate
+			);
             trainingkb.addModifier(attacker.modifier.kb_dealt);
             vskb.addModifier(attacker.modifier.kb_dealt);
             trainingkb.addModifier(target.modifier.kb_received);
@@ -641,7 +661,7 @@ app.controller('calculator', function ($scope) {
         //    }
         //}
 
-        
+
         var trainingDistance;
         var vsDistance;
         if (game_mode == "training") {
@@ -655,7 +675,7 @@ app.controller('calculator', function ($scope) {
         vskb.bounce(bounce);
         var t_hc = HitstunCancel(trainingkb.kb, trainingkb.horizontal_launch_speed, trainingkb.vertical_launch_speed, trainingkb.angle, windbox, electric);
         var v_hc = HitstunCancel(vskb.kb, vskb.horizontal_launch_speed, vskb.vertical_launch_speed, vskb.angle, windbox, electric);
-        
+
 		var resultList = [];
 
 		if (!ignoreStale) {
@@ -751,8 +771,21 @@ app.controller('calculator', function ($scope) {
         resultList.push(new Result("Max Vertical Distance", +trainingDistance.max_y.toFixed(6), +vsDistance.max_y.toFixed(6)));
 
 
-        resultList.push(new Result("Hit Advantage", HitAdvantage(trainingkb.hitstun, hitframe, $scope.use_landing_lag == "yes" ? faf + landing_lag : $scope.use_landing_lag == "autocancel" ? faf + attacker.attributes.hard_landing_lag : faf), HitAdvantage(vskb.hitstun, hitframe, $scope.use_landing_lag == "yes" ? faf + landing_lag : $scope.use_landing_lag == "autocancel" ? faf + attacker.attributes.hard_landing_lag : faf)));
-
+        resultList.push(
+        	new Result(
+        		"Hit Advantage",
+        		HitAdvantage(
+        			trainingkb.hitstun,
+        			hitframe,
+        			$scope.use_landing_lag == "yes" ? faf + landing_lag : $scope.use_landing_lag == "autocancel" ? faf + attacker.attributes.hard_landing_lag : faf
+        		),
+        		HitAdvantage(
+        			vskb.hitstun,
+        			hitframe,
+        			$scope.use_landing_lag == "yes" ? faf + landing_lag : $scope.use_landing_lag == "autocancel" ? faf + attacker.attributes.hard_landing_lag : faf
+        		)
+        	)
+        );
         if (target.name == "Rosalina And Luma") {
             if (!wbkb) {
                 var luma_trainingkb = TrainingKB(15 + luma_percent, base_damage, damage, 100, kbg, bkb, target.attributes.gravity, target.attributes.fall_speed, r, angle, in_air, windbox, electric, stick);
@@ -784,7 +817,7 @@ app.controller('calculator', function ($scope) {
 				resultList.push(new Result("Shield Break", s >= 50 * target.modifier.shield ? "Yes" : "No", sv >= 50 * target.modifier.shield ? "Yes" : "No"));
 			}
 			resultList.push(new Result("Shield Hitlag", ShieldHitlag(damage, hitlag, electric), ShieldHitlag(StaleDamage(damage, stale, ignoreStale), hitlag, electric)));
-            resultList.push(new Result("Shield stun", ShieldStun(damage, is_projectile, powershield), ShieldStun(StaleDamage(damage, stale, ignoreStale), is_projectile, powershield)));            
+            resultList.push(new Result("Shield stun", ShieldStun(damage, is_projectile, powershield), ShieldStun(StaleDamage(damage, stale, ignoreStale), is_projectile, powershield)));
 			resultList.push(new Result("Shield Advantage", ShieldAdvantage(damage, hitlag, hitframe, $scope.use_landing_lag == "yes" ? faf + landing_lag : $scope.use_landing_lag == "autocancel" ? faf + attacker.attributes.hard_landing_lag : faf, is_projectile, electric, powershield), ShieldAdvantage(StaleDamage(damage, stale, ignoreStale), hitlag, hitframe, $scope.use_landing_lag == "yes" ? faf + landing_lag : $scope.use_landing_lag == "autocancel" ? faf + attacker.attributes.hard_landing_lag : faf, is_projectile, electric, powershield)));
 
 			if (!windbox) {
@@ -797,7 +830,7 @@ app.controller('calculator', function ($scope) {
             resultList.push(new Result("Unblockable attack", "Yes", "Yes"));
         }
 
-        
+
         if(graph){
             var max_x = distance.graph_x + 10;
             var max_y = distance.graph_y + 10;
@@ -892,7 +925,7 @@ app.controller('calculator', function ($scope) {
         set_weight = $scope.set_weight;
 
 		effect = $scope.effect
-        
+
         launch_rate = parseFloat($scope.launch_rate);
 
         $scope.results = $scope.calculate();
@@ -976,7 +1009,7 @@ app.controller('calculator', function ($scope) {
 		$scope.updateDI();
 	}
 
-	
+
 	$scope.controllers = ControllerList;
 	$scope.game_controller = JSON.stringify($scope.controllers[0]);
 
@@ -1037,7 +1070,7 @@ app.controller('calculator', function ($scope) {
 		var input = null;
 
 		for (var i = 0; i < $scope.stickInputs.length; i++) {
-			if ($scope.stickInputs[i].X == $scope.stick.X && $scope.stickInputs[i].Y == $scope.stick.Y) {		
+			if ($scope.stickInputs[i].X == $scope.stick.X && $scope.stickInputs[i].Y == $scope.stick.Y) {
 				input = $scope.stickInputs[i];
 				break;
 			}
