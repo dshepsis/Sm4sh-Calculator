@@ -106,6 +106,7 @@ class Parameter {
     }
 };
 
+/* @daniel Apparently this is for managing query string parameters: */
 function getParameters() {
     var params = window.location.search;
     var list = [];
@@ -113,7 +114,7 @@ function getParameters() {
         list.push(new Parameter(b, decodeURI(d.replace("%26","&"))));
     });
     return list;
-    
+
 }
 
 //Parameters and default values
@@ -879,11 +880,12 @@ function mapParams($scope) {
 	}
 }
 
-var styleList = loadJSONPath("./css/themes.json");
+//var styleList = loadJSONPath("./css/themes.json");
 
-var defaultStyle = styleList[0];
+//var defaultStyle = styleList[0];
 
 function changeStyle(style) {
+  return //@debug
     for(var i=0;i<styleList.length;i++){
         if (styleList[i].name == style) {
             $("#mainStyle").attr("href", styleList[i].main);
@@ -898,7 +900,7 @@ function changeStyle(style) {
             return;
         }
     }
-    
+
 }
 
 //var inhttp = true; //getWebProtocol() == "http";
@@ -1013,15 +1015,15 @@ class Character {
                 this.icon = "./img/stock_icons/stock_90_" + gameNames[characters.indexOf(this.name)] + "_01.png";
             }
         }
-        
+
         this.api_name = this.name;
         if (name == "Game And Watch") {
             this.api_name = "Mrgamewatch";
         }
         this.attributes = loadJSON(this.name);
         this.icon = "./img/stock_icons/stock_90_" + gameNames[characters.indexOf(this.name)] + "_01.png";
-        
-        
+
+
     }
 
 };
@@ -1339,8 +1341,8 @@ class Collision {
 					this.collision_data.state = CharacterState.AERIAL;
 				}
 
-				
-				
+
+
 			}
 
 			if (collisionFound)
@@ -1526,7 +1528,7 @@ class Distance{
         if (extraFrames !== undefined) {
             this.extraFrames = extraFrames;
         }
-        
+
         if(position !== undefined){
             this.position = position;
         }
@@ -1847,7 +1849,7 @@ class Distance{
             this.x.push(+character_position.x.toFixed(6));
             this.y.push(+character_position.y.toFixed(6));
 
-            
+
             //Maximum position during hitstun
 			if (i < hitstun) {
                 if(Math.cos(angle*Math.PI / 180) < 0){
@@ -2197,7 +2199,7 @@ class Distance{
 			x_data.push(point.x + ((d / 3) * Math.cos((di - head_angle) * Math.PI / 180)));
 			y_data.push(point.y + ((d / 3) * Math.sin((di - head_angle) * Math.PI / 180)));
 
-			
+
 			this.di_plot.push({ 'calcValue': "DI", 'x': x_data, 'y': y_data, 'mode': 'lines', 'line': { 'color': settings.visualizer_colors.diLine }, 'hoverinfo':'none' });
 
 		}
@@ -2293,12 +2295,12 @@ class Knockback {
 				this.angle_with_di = this.angle;
 
 				this.lsi = LSI(this.stick.Y, this.angle);
-				
+
 				this.launch_speed *= this.lsi;
 
 				this.horizontal_launch_speed = this.launch_speed * Math.cos(this.angle * Math.PI / 180);
 				this.vertical_launch_speed = (this.launch_speed * Math.sin(this.angle * Math.PI / 180));
-				
+
 			}
 
 			this.x = Math.abs(Math.cos(this.angle * Math.PI / 180) * this.kb);
@@ -2340,7 +2342,7 @@ class Knockback {
         this.calculate();
     }
 
-    
+
 
 };
 
@@ -2381,7 +2383,7 @@ class PercentFromKnockback{
         this.wbkb_kb = -1;
         this.wbkb_modifier = 1;
         this.electric = electric;
-        
+
         this.launch_rate = launch_rate;
         if (this.launch_rate == undefined) {
             this.launch_rate = 1;

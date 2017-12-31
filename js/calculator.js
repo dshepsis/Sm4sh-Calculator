@@ -1001,8 +1001,8 @@ app.controller('calculator', function ($scope) {
 	}
 
 
-    $scope.theme = "Normal";
-    $scope.themes = styleList;
+    //$scope.theme = "Normal";
+    //$scope.themes = styleList;
 
     $scope.changeTheme = function () {
 		changeStyle($scope.theme);

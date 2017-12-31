@@ -126,27 +126,27 @@ function Aura(percent, stock_dif, game_format) {
 }
 
 function StaleNegation(queue, ignoreStale) {
-    if (ignoreStale) {
-        return 1;
+  if (ignoreStale) {
+    debugger;
+    return 1;
+  }
+  //if (timesInQueue > 9) {
+  //    timesInQueue = 9;
+  //}
+  //if (timesInQueue == 0) {
+  //    return 1.05;
+  //}
+  var S = [0.08, 0.07594, 0.06782, 0.06028, 0.05274, 0.04462, 0.03766, 0.02954, 0.022];
+  var s = 1;
+  for (var i = 0; i < queue.length; i++) {
+    if (queue[i]) {
+      s -= S[i];
     }
-    //if (timesInQueue > 9) {
-    //    timesInQueue = 9;
-    //}
-    //if (timesInQueue == 0) {
-    //    return 1.05;
-    //}
-    var S = [0.08, 0.07594, 0.06782, 0.06028, 0.05274, 0.04462, 0.03766, 0.02954, 0.022];
-    var s = 1;
-    for (var i = 0; i < queue.length; i++)
-    {
-        if (queue[i]) {
-            s -= S[i];
-        }
-    }
-    if (s == 1) {
-        return 1.05;
-    }
-    return s;
+  }
+  if (s == 1) {
+    return 1.05;
+  }
+  return s;
 }
 
 function Hitstun(kb, windbox, electric, ignoreReeling) {
@@ -269,7 +269,7 @@ function HitstunCancel(kb, launch_speed_x, launch_speed_y, angle, windbox, elect
     if (res.aerial > hitstun) {
         res.aerial = hitstun + 1;
     }
-    
+
     return res;
 }
 
@@ -543,7 +543,7 @@ function AngleToStickPosition(r, angle) {
 			y = 0;
 		return { X: x, Y: y };
 	}
-	
+
 }
 
 //Launch visualizer formulas

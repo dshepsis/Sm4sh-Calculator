@@ -95,6 +95,16 @@ function VSKB(percent, base_damage, damage, weight, kbg, bkb, gravity, fall_spee
   );
 }
 
+function Rage(percent) {
+    if (percent <= 35) {
+        return 1;
+    }
+    if (percent >= 150) {
+        return 1.15;
+    }
+    return 1 + (percent - 35) * (1.15 - 1) / (150 - 35);
+}
+
 function LaunchSpeed(kb){
   return kb * parameters.launch_speed;
 }
@@ -124,7 +134,7 @@ function GetAngle(X, Y) {
 }
 
 class Knockback {
-  constructor(kb, angle, gravity, fall_speed, aerial, windbox, electric, percent, set_weight, stick, launch_rate) {
+  constructor(kb, angle, gravity, fall_speed, target, windbox, electric, percent, set_weight, stick, launch_rate) {
     this.base_kb = kb;
     if (this.base_kb > 2500) {
       //this.base_kb = 2500;
@@ -135,7 +145,7 @@ class Knockback {
     this.angle_with_di = angle;
     this.angle = angle;
     this.gravity = gravity;
-    this.aerial = aerial;
+    this.target = target;
     this.windbox = windbox;
     this.set_weight = set_weight;
     this.tumble = false;
@@ -168,13 +178,13 @@ class Knockback {
     this.calculate = function () {
       this.kb = this.base_kb * this.launch_rate;
       if (this.original_angle == 361) {
-        this.base_angle = SakuraiAngle(this.kb, this.aerial);
+        this.base_angle = SakuraiAngle(this.kb, this.target);
       }
       this.angle = this.base_angle;
       if (this.base_angle != 0 && this.base_angle != 180) {
         this.tumble = this.kb > 80 && !windbox;
       }
-      if ((this.base_angle == 0 || this.base_angle == 180) && this.aerial) {
+      if ((this.base_angle == 0 || this.base_angle == 180) && this.target) {
         this.tumble = this.kb > 80 && !windbox;
       }
 
@@ -191,7 +201,7 @@ class Knockback {
 
       this.angle = GetAngle(this.horizontal_launch_speed, this.vertical_launch_speed);
 
-      if (this.windbox && !this.aerial)
+      if (this.windbox && !this.target)
         this.vertical_launch_speed = 0;
 
       this.di_able = this.tumble && Math.abs(Math.atan2(this.vertical_launch_speed, this.horizontal_launch_speed)) >= parameters.di;
@@ -225,13 +235,13 @@ class Knockback {
 
       this.can_jablock = false;
       if (this.angle == 0 || this.angle == 180 || this.angle == 360) {
-        if (this.kb != 0 && !this.windbox && !this.aerial) {
+        if (this.kb != 0 && !this.windbox && !this.target) {
           this.can_jablock = true;
         }
       }
       this.spike = this.angle >= 230 && this.angle <= 310;
       if (this.spike) {
-        if (this.kb != 0 && !this.windbox && !this.aerial) {
+        if (this.kb != 0 && !this.windbox && !this.target) {
           this.can_jablock = !this.tumble;
         }
       }
@@ -256,244 +266,237 @@ class Knockback {
   }
 };
 
+function Aura(percent, stock_dif, game_format) {
+    if(stock_dif == undefined){
+        stock_dif = "0";
+    }
+    if(game_format == undefined){
+        game_format = "Singles";
+    }
+    var aura = 0;
+    if (percent <= 70) {
+        aura = (66 + ((17.0 / 35.0) * percent)) / 100;
+    }else if (percent <= 190) {
+        aura = (100 + ((7.0 / 12.0) * (percent - 70))) / 100;
+    }else{
+        aura = 1.7;
+    }
+    //Stock difference data by KuroganeHammer, @A2E_smash and @Rmenaut, https://twitter.com/KuroganeHammer/status/784017200721965057
+    //For Doubles https://twitter.com/KuroganeHammer/status/784372918331383808
+    var m = 1;
+    var min = 0.6;
+    var max = 1.7;
+    if(stock_dif == "0"){
+        return aura;
+    }
+    if(game_format == "Singles"){
+        switch(stock_dif){
+            case "-2":
+                m = 1.3333;
+                min = 0.88;
+                max = 1.8;
+            break;
+            case "-1":
+                m = 1.142;
+                min = 0.753;
+                max = 1.8;
+            break;
+            case "+1":
+                m = 0.8888;
+                max = 1.51;
+            break;
+            case "+2":
+                m = 0.8;
+                max = 1.36;
+            break;
+        }
+    }else{
+        switch(stock_dif){
+            case "-2":
+                m = 2;
+                min = 1.32;
+                max = 1.8;
+            break;
+            case "-1":
+                m = 1.3333;
+                min = 0.88;
+                max = 1.8;
+            break;
+            case "+1":
+                m = 0.8;
+                max = 1.36;
+            break;
+            case "+2":
+                m = 0.6333;
+                max = 1.076;
+            break;
+        }
+    }
+    aura *= m;
+    if(aura < min){
+        aura = min;
+    }else if(aura > max){
+        aura = max;
+    }
+    return aura;
+}
 
-/* Example Usages: */
+function StaleNegation(queue, ignoreStale) {
+  if (ignoreStale) {
+    debugger;
+    return 1;
+  }
+  var S = [0.08, 0.07594, 0.06782, 0.06028, 0.05274, 0.04462, 0.03766, 0.02954, 0.022];
+  var s = 1;
+  for (var i = 0; i < queue.length; i++) {
+    if (queue[i]) {
+      s -= S[i];
+    }
+  }
+  if (s == 1) {
+    return 1.05;
+  }
+  return s;
+}
 
-var result = {
-  'training': [],
-  'vs': [],
-  'shield': []
+
+ /*************\
+|* DEMO BELOW *|
+\*************/
+
+/** @daniel
+ * Moveset data is from $scope.moveset, which is an array.
+ * The index of the move is given by $scope.move
+ */
+
+/* @daniel The MoveParser class in kuroganeAPI.js is used for decoding the api
+ * call, which manually parses out the preDamage by adding up all the hitboxes
+ * before the last one. */
+
+const uthrowAPIReturn = {
+	InstanceId: "598e70b44696590bf023d58a",
+	Name: "Uthrow",
+	OwnerId: 23,
+	Owner: "Lucario",
+	HitboxActive: null,
+	FirstActionableFrame: null,
+	BaseDamage: "5, 6",
+	Angle: "88",
+	BaseKnockBackSetKnockback: "70",
+	LandingLag: null,
+	AutoCancel: null,
+	KnockbackGrowth: "70",
+	MoveType: "throw",
+	IsWeightDependent: false,
+	Links: [
+		{
+			Rel: "self",
+			Href: "https://beta-api-kuroganehammer.azurewebsites.net/api/moves/598e70b44696590bf023d58a"
+		},
+		{
+			Rel: "character",
+			Href: "https://beta-api-kuroganehammer.azurewebsites.net/api/characters/name/Lucario"
+		}
+	]
 };
+const lucarioPercent = 0;
+const oppStartingPercent = 0;
+const damageAppliedBeforeThrowLauncher = 5; //uthrow does 5%, then launches with 6%
 
-// if ($scope.charge_data == null && $scope.is_smash) {
-//   base_damage = ChargeSmash(base_damage, charge_frames, megaman_fsmash, witch_time_smash_charge);
-// }
-
-if (attacker.name == "Lucario") {
-  const auraMult = Aura(attacker_percent, stock_dif, game_format);
-  base_damage *= auraMult;
-  preDamage *= auraMult;
-}
-var damage = base_damage;
-damage *= attacker.modifier.damage_dealt;
-damage *= target.modifier.damage_taken;
-preDamage *= attacker.modifier.damage_dealt;
-preDamage *= target.modifier.damage_taken;
-
-if (wbkb == 0) {
-  trainingkb = TrainingKB(
-  	target_percent + preDamage,
-  	base_damage,
-  	damage,
-  	set_weight ? 100 : target.attributes.weight,
-  	kbg,
-  	bkb,
-  	target.attributes.gravity * target.modifier.gravity,
-  	target.attributes.fall_speed * target.modifier.fall_speed,
-  	r,
-  	angle,
-  	in_air,
-  	windbox,
-  	electric,
-  	set_weight,
-  	stick
-  );
-  vskb = VSKB(
-    target_percent + (preDamage * StaleNegation(stale, ignoreStale)),
-    base_damage,
-    damage,
-    set_weight ? 100 : target.attributes.weight,
-    kbg,
-    bkb,
-    target.attributes.gravity * target.modifier.gravity,
-    target.attributes.fall_speed * target.modifier.fall_speed,
-    r,
-    stale,
-    ignoreStale,
-    attacker_percent,
-    angle,
-    in_air,
-    windbox,
-    electric,
-    set_weight,
-    stick,
-    launch_rate
-  );
-  trainingkb.addModifier(attacker.modifier.kb_dealt);
-  vskb.addModifier(attacker.modifier.kb_dealt);
-  trainingkb.addModifier(target.modifier.kb_received);
-  vskb.addModifier(target.modifier.kb_received);
-} else {
-  trainingkb = WeightBasedKB(
-  	set_weight ? 100 : target.attributes.weight,
-  	bkb,
-  	wbkb,
-  	kbg,
-  	target.attributes.gravity * target.modifier.gravity,
-  	target.attributes.fall_speed * target.modifier.fall_speed,
-  	r,
-  	target_percent,
-  	damage,
-  	0,
-  	angle,
-  	in_air,
-  	windbox,
-  	electric,
-  	set_weight,
-  	stick
-  );
-  vskb = WeightBasedKB(
-  	set_weight ? 100 : target.attributes.weight,
-  	bkb,
-  	wbkb,
-  	kbg,
-  	target.attributes.gravity * target.modifier.gravity,
-  	target.attributes.fall_speed * target.modifier.fall_speed,
-  	r,
-  	target_percent,
-  	StaleDamage(
-  		damage,
-  		stale,
-  		ignoreStale
-  	),
-  	attacker_percent,
-  	angle,
-  	in_air,
-  	windbox,
-  	electric,
-  	set_weight,
-  	stick,
-  	launch_rate
-  );
-  trainingkb.addModifier(target.modifier.kb_received);
-  vskb.addModifier(target.modifier.kb_received);
-}
-
-const distance = new Distance(
-	vskb.kb,
-	vskb.horizontal_launch_speed,
-	vskb.vertical_launch_speed,
-	vskb.hitstun,
-	vskb.angle,
-	target.attributes.gravity * target.modifier.gravity,
-	(
-		$scope.use_landing_lag == "yes" ? faf + landing_lag : $scope.use_landing_lag == "autocancel" ? faf + attacker.attributes.hard_landing_lag : faf
-	) - hitframe,
-	target.attributes.fall_speed * target.modifier.fall_speed,
-	target.attributes.traction * target.modifier.traction,
-	isFinishingTouch,
-	inverseX,
-	onSurface,
-	position,
-	stage,
-	graph,
-	parseFloat(
-		$scope.extra_vis_frames
-	)
-);
-
-//if(stage != null){
-//    if(distance.bounce_speed >= 1){
-//        //$scope.kb_modifier_bounce = distance.bounce;
-//        //bounce = distance.bounce;
-//    }
-//}
+/* Move base damage * smash charge multiplier * aura multiplier */
+const throwLauncherBaseDamage = 6 * Aura(lucarioPercent, 0, 'Singles');
+/* base_damage * attacker damage dealt multiplier * target damage received multiplier: */
+const throwLauncherRealDamage = throwLauncherBaseDamage * 1;
 
 
-let trainingDistance;
-let vsDistance;
-if (game_mode == "training") {
-  vsDistance = new Distance(
-  	vskb.kb,
-  	vskb.horizontal_launch_speed,
-  	vskb.vertical_launch_speed,
-  	vskb.hitstun,
-  	vskb.base_angle,
-  	target.attributes.gravity * target.modifier.gravity,
-  	(
-  		$scope.use_landing_lag == "yes" ? faf + landing_lag : $scope.use_landing_lag == "autocancel" ? faf + attacker.attributes.hard_landing_lag : faf
-  	) - hitframe,
-  	target.attributes.fall_speed * target.modifier.fall_speed,
-  	target.attributes.traction * target.modifier.traction,
-  	isFinishingTouch,
-  	inverseX,
-  	onSurface,
-  	position,
-  	stage,
-  	!graph,
-  	parseFloat(
-  		$scope.extra_vis_frames
-  	)
-  );
-  trainingDistance = distance;
-} else {
-  vsDistance = distance;
-  trainingDistance = new Distance(
-  	trainingkb.kb,
-  	trainingkb.horizontal_launch_speed,
-  	trainingkb.vertical_launch_speed,
-  	trainingkb.hitstun,
-  	trainingkb.base_angle,
-  	target.attributes.gravity * target.modifier.gravity,
-  	(
-  		$scope.use_landing_lag == "yes" ? faf + landing_lag : $scope.use_landing_lag == "autocancel" ? faf + attacker.attributes.hard_landing_lag : faf
-  	) - hitframe,
-  	target.attributes.fall_speed * target.modifier.fall_speed,
-  	target.attributes.traction * target.modifier.traction,
-  	isFinishingTouch,
-  	inverseX,
-  	onSurface,
-  	position,
-  	stage,
-  	!graph,
-  	parseFloat(
-  		$scope.extra_vis_frames
-  	)
-  );
-}
-trainingkb.bounce(bounce);
-vskb.bounce(bounce);
-const t_hc = HitstunCancel(
-	trainingkb.kb,
-	trainingkb.horizontal_launch_speed,
-	trainingkb.vertical_launch_speed,
-	trainingkb.angle,
-	windbox,
-	electric
-);
-const v_hc = HitstunCancel(
-	vskb.kb,
-	vskb.horizontal_launch_speed,
-	vskb.vertical_launch_speed,
-	vskb.angle,
-	windbox,
-	electric
-);
+const throwLauncherKBG = Number(uthrowAPIReturn.KnockbackGrowth);
+const throwLauncherBKB = Number(uthrowAPIReturn.BaseKnockBackSetKnockback);
+const throwLauncherAngle = Number(uthrowAPIReturn.Angle);
 
-vskb = VSKB(
-  target_percent + (preDamage * StaleNegation(stale, ignoreStale)),
-  base_damage,
-  damage,
+/* The staling queue is an array of 9 boolean values. I asssume no staling: */
+const stalingQueue = [false, false, false, false, false, false, false, false, false];
+const ignoreStaling = false; //Never used
+
+const set_weight = false;
+
+/* This is ordinarily a "Character" object, which has its own class: */
+const target = Object.freeze({
+  "display_name": "Bayonetta",
+  "modifier": {
+    "name": "Normal",
+    "damage_dealt": 1,
+    "damage_taken": 1,
+    "kb_dealt": 1,
+    "kb_received": 1,
+    "gravity": 1,
+    "fall_speed": 1,
+    "shield": 1,
+    "air_friction": 1,
+    "traction": 1
+  },
+  "modifiers": [],
+  "name": "Bayonetta",
+  "api_name": "Bayonetta",
+  "attributes": {
+    "name": "Bayonetta",
+    "weight": 84,
+    "run_speed": 1.6,
+    "walk_speed": 0.9,
+    "air_speed": 0.97,
+    "fall_speed": 1.77,
+    "fast_fall_speed": 2.832,
+    "air_acceleration": 0.085,
+    "gravity": 0.12,
+    "sh_air_time": 38,
+    "jumps": 2,
+    "wall_jump": true,
+    "wall_cling": true,
+    "crawl": false,
+    "tether": false,
+    "jumpsquat": 4,
+    "soft_landing_lag": 2,
+    "hard_landing_lag": 4,
+    "fh_air_time": 54,
+    "traction": 0.055,
+    "gravity2": 0.015,
+    "air_friction": 0.008,
+    "initial_dash": 1.7,
+    "run_acceleration": 0.0942,
+    "run_deceleration": 0.04,
+    "jump_height": 39,
+    "hop_height": 21.354742,
+    "air_jump_height": 42
+  },
+  "icon": "./img/stock_icons/stock_90_bayonetta_01.png"
+});
+
+/* Copied from calculator.js: */
+const vskb = VSKB(
+  oppStartingPercent + (damageAppliedBeforeThrowLauncher * StaleNegation(stalingQueue, ignoreStaling)), //% before launcher damage
+  throwLauncherBaseDamage, //Move Base damage * aura
+  throwLauncherRealDamage,
   set_weight ? 100 : target.attributes.weight,
-  kbg,
-  bkb,
+  throwLauncherKBG,
+  throwLauncherBKB,
   target.attributes.gravity * target.modifier.gravity,
   target.attributes.fall_speed * target.modifier.fall_speed,
-  r,
-  stale,
-  ignoreStale,
-  attacker_percent,
-  angle,
-  in_air,
-  windbox,
-  electric,
-  set_weight,
-  stick,
-  launch_rate
+  1, // Knockback multiplier, 0.85 for crouch cancel, 1.2 for interrupted smash attack charge, 1 for anything else
+  stalingQueue, // 9-element boolean array
+  false, // Ignore staling, set to false.
+  lucarioPercent, // Attacker %
+  throwLauncherAngle,
+  false, //Target is in air
+  false, // Attack is a windbox
+  false, // Attack has the electric effect
+  set_weight, // Set to false by me above
+  { X: 0, Y: 0 }, // Stick position
+  1 // Launch rate. 1 unless it's Genesis
 );
 
-hitAdv = HitAdvantage(
+const uthrowHitFrame = 17;
+const uthrowFAF = 38;
+const hitAdv = HitAdvantage(
   vskb.hitstun,
-  hitframe,
-  faf
+  uthrowHitFrame,
+  uthrowFAF
 );
