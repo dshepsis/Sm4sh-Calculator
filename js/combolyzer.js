@@ -500,3 +500,5 @@ const hitAdv = HitAdvantage(
   uthrowHitFrame,
   uthrowFAF
 );
+console.log(`Hitstun: ${vskb.hitstun}`);
+console.log(`Hit Advantage: ${hitAdv}`);
