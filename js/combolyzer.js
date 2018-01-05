@@ -1,5 +1,6 @@
 'use strict';
 
+/* eslint-disable */
 const lucarioUthrow = Object.freeze({
   LaunchFrame: 17,
   FAF: 48,
@@ -13,6 +14,7 @@ const lucarioUthrow = Object.freeze({
 const attacker = Object.freeze({
   name: "Lucario"
 });
+/* eslint-enable */
 
 function HitAdvantage(hitstun, hitframe, faf) {
   return hitstun - (faf - (hitframe + 1));
@@ -60,7 +62,7 @@ function Hitstun(kb, windbox, electric, ignoreReeling) {
   if (windbox) {
     return 0;
   }
-  var hitstun = Math.floor(kb * parameters.hitstun) - 1;
+  let hitstun = Math.floor(kb * parameters.hitstun) - 1;
   if (!ignoreReeling) {
     if (kb * parameters.hitstun >= parameters.tumble_threshold) {
       hitstun++;
@@ -76,76 +78,67 @@ function Hitstun(kb, windbox, electric, ignoreReeling) {
   return hitstun;
 }
 
-function VSKB(percent, base_damage, damage, weight, kbg, bkb, gravity, fall_speed, r, timesInQueue, ignoreStale, attacker_percent, angle, in_air, windbox, electric, set_weight, stick, launch_rate) {
-  var staleness = StaleNegation(timesInQueue, ignoreStale);
-  //return new Knockback((((((((percent + damage * staleness) / 10 + (((percent + damage * staleness) * base_damage * (1 - (1 - staleness) * 0.3)) / 20)) * 1.4 * (200 / (weight + 100))) + 18) * (kbg / 100)) + bkb)) * (r * Rage(attacker_percent)), angle, gravity, fall_speed, in_air, windbox, electric, percent + (damage * staleness), set_weight, stick, launch_rate);
-
-  return new Knockback(
-  	(((((((percent + damage * staleness) / 10 + (((percent + damage * staleness) * base_damage * (1 - (1 - staleness) * 0.3)) / 20)) * 1.4 * (200 / (weight + 100))) + 18) * (kbg / 100)) + bkb)) * (r * Rage(attacker_percent)),
-  	angle,
-  	gravity,
-  	fall_speed,
-  	in_air,
-  	windbox,
-  	electric,
-  	percent + (damage * staleness),
-  	set_weight,
-  	stick,
-  	launch_rate
-  );
-}
-
-function Rage(percent) {
-    if (percent <= 35) {
-        return 1;
-    }
-    if (percent >= 150) {
-        return 1.15;
-    }
-    return 1 + (percent - 35) * (1.15 - 1) / (150 - 35);
-}
-
-function LaunchSpeed(kb){
-  return kb * parameters.launch_speed;
-}
-
-function SakuraiAngle(kb, aerial) {
-  if (aerial) {
-    return (.79 * 180 / Math.PI);
-  }
-  if (kb < 60) {
+function StickSensibility(value) {
+  if (value < 24 && value > -24)
     return 0;
-  }
-  if (kb >= 88) {
-    return 40;
-  }
-  if (kb == 60) {
-    return (kb - 59.9999) / 0.7
-  }
-  return (kb - 60) / 0.7;
+  if (value > 118)
+    return 1;
+  if (value < -118)
+    return -1;
+  return value / 118;
 }
 
-function GetAngle(X, Y) {
-  var angle = Math.atan2(Y, X) * 180 / Math.PI;
-  if (angle < 0) {
+function DI(stick, launchSpeed, totalLaunchSpeed) {
+  if (totalLaunchSpeed < 0.00001) //There is an if on MSC but it shouldn't happen since it requires tumble for DI to work
+    return Math.atan2(launchSpeed.Y, launchSpeed.X) * 180 / Math.PI;
+
+  if (Math.abs(Math.atan2(launchSpeed.Y, launchSpeed.X)) < parameters.di) //Cannot DI if launch angle is less than DI angle change param
+    return Math.atan2(launchSpeed.Y, launchSpeed.X) * 180 / Math.PI;
+
+  const X = StickSensibility(stick.X);
+  const Y = StickSensibility(stick.Y);
+
+  const check = Y * launchSpeed.X - X * launchSpeed.Y < 0;
+
+  const variation = Math.abs(X * launchSpeed.Y - Y * launchSpeed.X) / totalLaunchSpeed;
+
+  const di = parameters.di * variation;
+
+  let angle = 0;
+
+  if (check)
+    angle = (Math.atan2(launchSpeed.Y, launchSpeed.X) - di) * 180 / Math.PI;
+  else
+    angle = (Math.atan2(launchSpeed.Y, launchSpeed.X) + di) * 180 / Math.PI;
+
+  if (angle < 0)
     angle += 360;
-  }
+
   return angle;
 }
 
+function LSI(stickY, launch_angle) {
+  if (launch_angle > 65 && launch_angle < 115)
+    return 1;
+  if (launch_angle > 245 && launch_angle < 295)
+    return 1;
+
+  const Y = StickSensibility(stickY);
+  if (Y >= 0)
+    return 1 + (parameters.lsi_max - 1) * Y;
+  return 1 - (1 - parameters.lsi_min) * -Y;
+}
+
 class Knockback {
-  constructor(kb, angle, gravity, fall_speed, target, windbox, electric, percent, set_weight, stick, launch_rate) {
+  constructor(kb, angle, gravity, fall_speed, target_is_in_air, windbox, electric, percent, set_weight, stick, launch_rate) {
     this.base_kb = kb;
-    if (this.base_kb > 2500) {
-      //this.base_kb = 2500;
-    }
     this.kb = this.base_kb;
     this.original_angle = angle;
     this.base_angle = angle;
     this.angle_with_di = angle;
     this.angle = angle;
     this.gravity = gravity;
-    this.target = target;
+    this.target = target_is_in_air;
     this.windbox = windbox;
     this.set_weight = set_weight;
     this.tumble = false;
@@ -163,28 +156,28 @@ class Knockback {
     this.vertical_launch_speed = 0;
     this.launch_rate = launch_rate;
     this.electric = electric;
-    if (this.launch_rate == undefined) {
+    if (this.launch_rate === undefined) {
       this.launch_rate = 1;
     }
-    this.hitstun = Hitstun(this.base_kb, this.windbox, this.electric);
-    if (stick !== undefined) {
-      this.stick = stick;
-    } else {
+    //this.hitstun = Hitstun(this.base_kb, this.windbox, this.electric);
+    if (stick === undefined) {
       this.stick = {
         X: 0,
         Y: 0
       };
+    } else {
+      this.stick = stick;
     }
     this.calculate = function () {
       this.kb = this.base_kb * this.launch_rate;
-      if (this.original_angle == 361) {
+      if (this.original_angle === 361) {
         this.base_angle = SakuraiAngle(this.kb, this.target);
       }
       this.angle = this.base_angle;
-      if (this.base_angle != 0 && this.base_angle != 180) {
+      if (this.base_angle !== 0 && this.base_angle !== 180) {
         this.tumble = this.kb > 80 && !windbox;
       }
-      if ((this.base_angle == 0 || this.base_angle == 180) && this.target) {
+      if ((this.base_angle === 0 || this.base_angle === 180) && this.target) {
         this.tumble = this.kb > 80 && !windbox;
       }
 
@@ -206,7 +199,7 @@ class Knockback {
 
       this.di_able = this.tumble && Math.abs(Math.atan2(this.vertical_launch_speed, this.horizontal_launch_speed)) >= parameters.di;
 
-      if (this.di_able && (this.stick.X != 0 || this.stick.Y != 0)) {
+      if (this.di_able && (this.stick.X !== 0 || this.stick.Y !== 0)) {
 
         this.launch_speed = Math.sqrt(Math.pow(this.horizontal_launch_speed, 2) + Math.pow(this.vertical_launch_speed, 2)); //Include gravity boost to the new launch speed (yes this only happens when stick isn't on neutral)
 
@@ -234,14 +227,14 @@ class Knockback {
 
 
       this.can_jablock = false;
-      if (this.angle == 0 || this.angle == 180 || this.angle == 360) {
-        if (this.kb != 0 && !this.windbox && !this.target) {
+      if (this.angle === 0 || this.angle === 180 || this.angle === 360) {
+        if (this.kb !== 0 && !this.windbox && !this.target) {
           this.can_jablock = true;
         }
       }
       this.spike = this.angle >= 230 && this.angle <= 310;
       if (this.spike) {
-        if (this.kb != 0 && !this.windbox && !this.target) {
+        if (this.kb !== 0 && !this.windbox && !this.target) {
           this.can_jablock = !this.tumble;
         }
       }
@@ -261,106 +254,212 @@ class Knockback {
         this.vertical_launch_speed *= parameters.bounce;
         this.horizontal_launch_speed *= parameters.bounce;
       }
-    }
+    };
     this.calculate();
   }
-};
+}
+
+/**
+ * Properties of the attack:
+ * - base_damage
+ * - damage
+ * - kbg
+ * - bkb
+ * - angle
+ * - windbox
+ * - electric
+ * - set_wiehgt
+ *
+ * Properties of the attacker:
+ * - stalingQueue
+ * - attacker_percent
+ *
+ * Properties of the target:
+ * - percent
+ * - weight
+ * - gravity
+ * - fall_speed
+ * - r
+ * - in_air
+ * - stick
+ *
+ * Other (Game?):
+ * - ignoreStale
+ * - launch_rate
+ */
+
+function VSKB(
+  percent, base_damage, damage, weight, kbg, bkb, gravity, fall_speed, r,
+  stalingQueue, ignoreStale, attacker_percent, angle, in_air, windbox,
+  electric, set_weight, stick, launch_rate
+) {
+  const staleness = StaleNegation(stalingQueue, ignoreStale);
+
+  const targetDamageAfterHit = percent + damage * staleness;
+  let baseKB = targetDamageAfterHit * base_damage * (1 - (1 - staleness) * 0.3);
+  baseKB /= 20;
+  baseKB += targetDamageAfterHit / 10;
+  baseKB *= 1.4 * (200 / (weight + 100));
+  baseKB += 18;
+  baseKB *= kbg / 100;
+  baseKB += bkb;
+  baseKB *= r * Rage(attacker_percent);
+
+  return new Knockback(
+    baseKB,
+    angle,
+    gravity,
+    fall_speed,
+    in_air,
+    windbox,
+    electric,
+    targetDamageAfterHit,
+    set_weight,
+    stick,
+    launch_rate
+  );
+}
+
+function Rage(percent) {
+  if (percent <= 35) {
+    return 1;
+  }
+  if (percent >= 150) {
+    return 1.15;
+  }
+  return 1 + (percent - 35) * (1.15 - 1) / (150 - 35);
+}
+
+function LaunchSpeed(kb){
+  return kb * parameters.launch_speed;
+}
+
+function SakuraiAngle(kb, aerial) {
+  if (aerial) {
+    return (.79 * 180 / Math.PI);
+  }
+  if (kb < 60) {
+    return 0;
+  }
+  if (kb >= 88) {
+    return 40;
+  }
+  if (kb === 60) {
+    return (kb - 59.9999) / 0.7;
+  }
+  return (kb - 60) / 0.7;
+}
+
+function GetAngle(X, Y) {
+  let angle = Math.atan2(Y, X) * 180 / Math.PI;
+  if (angle < 0) {
+    angle += 360;
+  }
+  return angle;
+}
 
 function Aura(percent, stock_dif, game_format) {
-    if(stock_dif == undefined){
-        stock_dif = "0";
-    }
-    if(game_format == undefined){
-        game_format = "Singles";
-    }
-    var aura = 0;
-    if (percent <= 70) {
-        aura = (66 + ((17.0 / 35.0) * percent)) / 100;
-    }else if (percent <= 190) {
-        aura = (100 + ((7.0 / 12.0) * (percent - 70))) / 100;
-    }else{
-        aura = 1.7;
-    }
-    //Stock difference data by KuroganeHammer, @A2E_smash and @Rmenaut, https://twitter.com/KuroganeHammer/status/784017200721965057
-    //For Doubles https://twitter.com/KuroganeHammer/status/784372918331383808
-    var m = 1;
-    var min = 0.6;
-    var max = 1.7;
-    if(stock_dif == "0"){
-        return aura;
-    }
-    if(game_format == "Singles"){
-        switch(stock_dif){
-            case "-2":
-                m = 1.3333;
-                min = 0.88;
-                max = 1.8;
-            break;
-            case "-1":
-                m = 1.142;
-                min = 0.753;
-                max = 1.8;
-            break;
-            case "+1":
-                m = 0.8888;
-                max = 1.51;
-            break;
-            case "+2":
-                m = 0.8;
-                max = 1.36;
-            break;
-        }
-    }else{
-        switch(stock_dif){
-            case "-2":
-                m = 2;
-                min = 1.32;
-                max = 1.8;
-            break;
-            case "-1":
-                m = 1.3333;
-                min = 0.88;
-                max = 1.8;
-            break;
-            case "+1":
-                m = 0.8;
-                max = 1.36;
-            break;
-            case "+2":
-                m = 0.6333;
-                max = 1.076;
-            break;
-        }
-    }
-    aura *= m;
-    if(aura < min){
-        aura = min;
-    }else if(aura > max){
-        aura = max;
-    }
+  if (stock_dif === undefined) {
+    stock_dif = "0";
+  }
+  if (game_format === undefined) {
+    game_format = "Singles";
+  }
+  let aura = 0;
+  if (percent <= 70) {
+    aura = (66 + ((17.0 / 35.0) * percent)) / 100;
+  } else if (percent <= 190) {
+    aura = (100 + ((7.0 / 12.0) * (percent - 70))) / 100;
+  } else {
+    aura = 1.7;
+  }
+  //Stock difference data by KuroganeHammer, @A2E_smash and @Rmenaut, https://twitter.com/KuroganeHammer/status/784017200721965057
+  //For Doubles https://twitter.com/KuroganeHammer/status/784372918331383808
+  let m = 1;
+  let min = 0.6;
+  let max = 1.7;
+  if (Number(stock_dif) === 0) {
     return aura;
+  }
+  if (game_format === "Singles") {
+    switch (stock_dif) {
+      case "-2":
+        m = 1.3333;
+        min = 0.88;
+        max = 1.8;
+        break;
+      case "-1":
+        m = 1.142;
+        min = 0.753;
+        max = 1.8;
+        break;
+      case "+1":
+        m = 0.8888;
+        max = 1.51;
+        break;
+      case "+2":
+        m = 0.8;
+        max = 1.36;
+        break;
+      default:
+        throw new Error(
+          "Got more than +- 2 stock difference in Aura calculation! "+
+          `Stock difference was ${stock_dif}.`
+        );
+    }
+  } else {
+    switch (stock_dif) {
+      case "-2":
+        m = 2;
+        min = 1.32;
+        max = 1.8;
+        break;
+      case "-1":
+        m = 1.3333;
+        min = 0.88;
+        max = 1.8;
+        break;
+      case "+1":
+        m = 0.8;
+        max = 1.36;
+        break;
+      case "+2":
+        m = 0.6333;
+        max = 1.076;
+        break;
+      default:
+        throw new Error(
+          "Got more than +- 2 stock difference in Aura calculation!"
+        );
+    }
+  }
+  aura *= m;
+  if (aura < min) {
+    aura = min;
+  } else if (aura > max) {
+    aura = max;
+  }
+  return aura;
 }
 
 function StaleNegation(queue, ignoreStale) {
   if (ignoreStale) {
-    debugger;
     return 1;
   }
-  var S = [0.08, 0.07594, 0.06782, 0.06028, 0.05274, 0.04462, 0.03766, 0.02954, 0.022];
-  var s = 1;
-  for (var i = 0; i < queue.length; i++) {
+  const S = [0.08, 0.07594, 0.06782, 0.06028, 0.05274, 0.04462, 0.03766, 0.02954, 0.022];
+  let s = 1;
+  for (let i = 0; i < queue.length; i++) {
     if (queue[i]) {
       s -= S[i];
     }
   }
-  if (s == 1) {
+  if (s === 1) {
     return 1.05;
   }
   return s;
 }
 
-
- /*************\
+/*************\
 |* DEMO BELOW *|
 \*************/
 
@@ -374,30 +473,30 @@ function StaleNegation(queue, ignoreStale) {
  * before the last one. */
 
 const uthrowAPIReturn = {
-	InstanceId: "598e70b44696590bf023d58a",
-	Name: "Uthrow",
-	OwnerId: 23,
-	Owner: "Lucario",
-	HitboxActive: null,
-	FirstActionableFrame: null,
-	BaseDamage: "5, 6",
-	Angle: "88",
-	BaseKnockBackSetKnockback: "70",
-	LandingLag: null,
-	AutoCancel: null,
-	KnockbackGrowth: "70",
-	MoveType: "throw",
-	IsWeightDependent: false,
-	Links: [
-		{
-			Rel: "self",
-			Href: "https://beta-api-kuroganehammer.azurewebsites.net/api/moves/598e70b44696590bf023d58a"
-		},
-		{
-			Rel: "character",
-			Href: "https://beta-api-kuroganehammer.azurewebsites.net/api/characters/name/Lucario"
-		}
-	]
+  InstanceId: "598e70b44696590bf023d58a",
+  Name: "Uthrow",
+  OwnerId: 23,
+  Owner: "Lucario",
+  HitboxActive: null,
+  FirstActionableFrame: null,
+  BaseDamage: "5, 6",
+  Angle: "88",
+  BaseKnockBackSetKnockback: "70",
+  LandingLag: null,
+  AutoCancel: null,
+  KnockbackGrowth: "70",
+  MoveType: "throw",
+  IsWeightDependent: false,
+  Links: [
+    {
+      Rel: "self",
+      Href: "https://beta-api-kuroganehammer.azurewebsites.net/api/moves/598e70b44696590bf023d58a"
+    },
+    {
+      Rel: "character",
+      Href: "https://beta-api-kuroganehammer.azurewebsites.net/api/characters/name/Lucario"
+    }
+  ]
 };
 const lucarioPercent = 0;
 const oppStartingPercent = 0;
