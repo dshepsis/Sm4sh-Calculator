@@ -11,7 +11,7 @@ function validateProperties(obj, propTypes, errMsgOptions) {
   for (const propName of Object.keys(propTypes)) {
     if (!hasProperty(obj, propName)) {
       throw new TypeError(
-        `${errMsgOptions.name} must have a property called '${propName}.'`
+        `${errMsgOptions.varName} must have a property called '${propName}.'`
       );
     }
     const expectedType = propTypes[propName];
@@ -19,8 +19,8 @@ function validateProperties(obj, propTypes, errMsgOptions) {
     const givenType = (typeof givenPropValue);
     if (expectedType !== givenType) {
       throw new TypeError(
-        `${errMsgOptions.name} had an invalid type for property '${propName}'. `+
-        `Expected ${expectedType}. Received ${givenType}.`
+        `${errMsgOptions.varName} had an invalid type for property `+
+        `'${propName}'. Expected ${expectedType}. Received ${givenType}.`
       );
     }
   }
@@ -28,7 +28,7 @@ function validateProperties(obj, propTypes, errMsgOptions) {
   for (const propName of Object.keys(obj)) {
     if (!hasProperty(propTypes, propName)) {
       throw new TypeError(
-        `${errMsgOptions.name} has an unrecognized property '${propName}.'`
+        `${errMsgOptions.varName} has an unrecognized property '${propName}.'`
       );
     }
   }
@@ -44,32 +44,32 @@ const Fighter = (function() {
   const PROPERTIES = {
     name: 'string',
     weight: 'number',
-    run_speed: 'number',
-    walk_speed: 'number',
-    air_speed: 'number',
-    fall_speed: 'number',
-    fast_fall_speed: 'number',
-    base_air_acceleration: 'number',
-    max_additional_air_acceleration: 'number',
+    runSpeed: 'number',
+    walkSpeed: 'number',
+    airSpeed: 'number',
+    fallSpeed: 'number',
+    fastFallSpeed: 'number',
+    baseAirAcceleration: 'number',
+    maxAdditionalAirAcceleration: 'number',
     gravity: 'number',
-    sh_air_time: 'number',
+    shAirTime: 'number',
     jumps: 'number',
-    wall_jump: 'boolean',
-    wall_cling: 'boolean',
+    wallJump: 'boolean',
+    wallCling: 'boolean',
     crawl: 'boolean',
     tether: 'boolean',
     jumpsquat: 'number',
-    soft_landing_lag: 'number',
-    hard_landing_lag: 'number',
-    fh_air_time: 'number',
+    softLandingLag: 'number',
+    hardLandingLag: 'number',
+    fhAirTime: 'number',
     traction: 'number',
-    air_friction: 'number',
-    initial_dash: 'number',
-    run_acceleration: 'number',
-    run_deceleration: 'number',
-    jump_height: 'number',
-    hop_height: 'number',
-    air_jump_height: 'number'
+    airFriction: 'number',
+    initialDash: 'number',
+    runAcceleration: 'number',
+    runDeceleration: 'number',
+    jumpHeight: 'number',
+    hopHeight: 'number',
+    airJumpHeight: 'number'
   };
 
   return class Fighter {
@@ -77,7 +77,7 @@ const Fighter = (function() {
       validateProperties(
         fighterObj,
         PROPERTIES,
-        {name: "Parameter to Fighter Constructor"}
+        {varName: "Parameter to Fighter Constructor"}
       );
       Object.assign(this, fighterObj);
       Object.freeze(this);

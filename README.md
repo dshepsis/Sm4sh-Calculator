@@ -15,11 +15,11 @@ This tool is not yet functional. You cannot really use it.
 * Remove `gravity2` from all attributes files. It is not used anywhere, and has no related functionality.
 * The attributes files also contain air acceleration, but only the max additional value, not the base value.
 * Implement the following classes:
- * Fighter (Draft Complete)
- * Attack
- * Attacker
- * Target
- * GameState
+  * Fighter (Draft Complete)
+  * ~~Attack~~ Action (Draft Complete)
+  * Attacker
+  * Target
+  * GameState
 
 
 ## Credits

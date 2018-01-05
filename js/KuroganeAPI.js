@@ -1,3 +1,4 @@
+/* eslint-disable */
 ﻿function loadAsyncFunctionJSON(path, success, beforeSend, error) {
     $.ajax({
         'async': true,
@@ -145,7 +146,7 @@ class MoveParser {
         if(rehitRateRegex.test(hitboxActive)){
             this.rehitRate = parseFloat(/[0-9]+/i.exec(rehitRateRegex.exec(hitboxActive)[0])[0]);
         }
-        
+
         this.count = 1;
         this.moves = [];
         var wbkb = 0;
@@ -547,7 +548,7 @@ class Move {
         this.dashAttack = this.name.includes("Dash Attack");
         this.counter = this.counterMult != 0 || this.name.includes("Counter (Attack)") || this.name.includes("Substitute (Attack") || this.name.includes("Toad (Attack") || this.name.includes("Witch Time");
         this.commandGrab = !this.grab && (this.name.includes("Grab") || this.name.includes("Confusion") || (this.name.includes("Inhale") && !this.name.includes("Spit")) || (this.name.includes("Chomp") && !this.name.includes("Food") && !this.name.includes("Eating")) || this.name.includes("Egg Lay") || this.name.includes("Flame Choke")) && !this.name.includes("Attack") && !this.name.includes("(Hitbox)");
-        this.unblockable = this.grab || this.throw || this.commandGrab || (this.name.includes("Vision") && this.name.includes("Attack")) || this.name.includes("Witch Time") || this.name.includes("KO Punch") || this.name == "Focus Attack (Stage 3)" || this.name == "Reflect Barrier"; 
+        this.unblockable = this.grab || this.throw || this.commandGrab || (this.name.includes("Vision") && this.name.includes("Attack")) || this.name.includes("Witch Time") || this.name.includes("KO Punch") || this.name == "Focus Attack (Stage 3)" || this.name == "Reflect Barrier";
         this.windbox = this.name.includes("Windbox") || this.name.includes("Flinchless") || this.name == "Hydro Pump" || this.name == "F.L.U.D.D (Attack)";
         this.multihit = /(Hit [0-9]+)/gi.test(this.name) || /(Hits [0-9]+\-[0-9]+)/gi.test(this.name) || this.name.includes("Final Hit") || this.rehitRate != 0;
 		this.spike = this.angle >= 230 && this.angle <= 310;
@@ -572,7 +573,7 @@ class Move {
 		this.check = function () {
 			if (isNaN(this.base_damage) && isNaN(this.angle) && isNaN(this.bkb) && isNaN(this.kbg))
 				this.valid = false;
-			
+
 			return this;
 		}
 
@@ -622,7 +623,7 @@ class Move {
         if(this.name.includes("True")){
             this.type += ",RyuTrue";
         }
-        
+
         if((this.name.includes("Limit") && !this.name.includes("Limit Break")) || this.name.includes("Finishing Touch") ){
             this.type += ",LimitBreak";
 		}
@@ -750,7 +751,7 @@ function getMoveset(attacker, $scope) {
                         }
                     }
                     moves.unshift(new Move(0, -1,"Not selected",0,0,0,0,false,0,0,0).invalidate());
-                    
+
                     try{
                         $scope.$apply(function () {
                             if ($scope.attackerName != moves[1].character) {
@@ -759,7 +760,7 @@ function getMoveset(attacker, $scope) {
                             }
                             $scope.moveset = moves;
                             $scope.detectAttack();
-                            
+
                         });
                     } catch (err) {
                         if ($scope.attackerName != moves[0].character) {
@@ -785,7 +786,7 @@ function getMoveset(attacker, $scope) {
     }, function () {
 		$scope.moveset = [new Move(-1, -1, "Couldn't access API", 0, 0, 0, 0, false, 0, 0, 1).invalidate()];
     });
-    
+
 }
 
 function getCharactersId(names, $scope) {
@@ -805,7 +806,7 @@ function getCharactersId(names, $scope) {
                         characters.push(new CharacterId(name, id, color));
                         break;
 					}
-					
+
                 }
             }
             try {
@@ -817,7 +818,7 @@ function getCharactersId(names, $scope) {
                 $scope.charactersId = characters;
                 $scope.ready();
             }
-            
+
         }
     }, null, function () {
         $scope.status = "Couldn't access API";
