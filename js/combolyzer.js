@@ -159,7 +159,6 @@ class Knockback {
     if (this.launch_rate === undefined) {
       this.launch_rate = 1;
     }
-    //this.hitstun = Hitstun(this.base_kb, this.windbox, this.electric);
     if (stick === undefined) {
       this.stick = {
         X: 0,

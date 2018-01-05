@@ -1,3 +1,4 @@
+/* eslint-disable */
 ﻿function loadJSON(name) {
     var json = null;
     $.ajax({

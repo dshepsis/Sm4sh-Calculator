@@ -11,6 +11,16 @@ This tool is not yet functional. You cannot really use it.
 * Given a move, search for followups, frame-traps, and 50/50s
 * Eventually parameterize movement and jumps to provide more information on whether combos may be true beyond just comparing frame-data.
 
+## To do:
+* Remove `gravity2` from all attributes files. It is not used anywhere, and has no related functionality.
+* The attributes files also contain air acceleration, but only the max additional value, not the base value.
+* Implement the following classes:
+ * Fighter (Draft Complete)
+ * Attack
+ * Attacker
+ * Target
+ * GameState
+
 
 ## Credits
 * [@KuroganeHammer](https://twitter.com/KuroganeHammer) [frame data repository](http://kuroganehammer.com/Smash4)
