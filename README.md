@@ -21,6 +21,13 @@ This tool is not yet functional. You cannot really use it.
   * Target
   * GameState
 
+## Things which depend on port priority:
+Credit to Kurogane Hammer:
+* "pacman hydrant ownership when hit at the same time"
+* "grabbing the ledge at the same time iirc"
+* "also footstools"
+* "grabs and being KOd at the same time in sudden death?"
+
 
 ## Credits
 * [@KuroganeHammer](https://twitter.com/KuroganeHammer) [frame data repository](http://kuroganehammer.com/Smash4)
