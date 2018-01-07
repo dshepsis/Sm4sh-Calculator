@@ -17,8 +17,8 @@ This tool is not yet functional. You cannot really use it.
 * Implement the following classes:
   * Fighter (Draft Complete)
   * ~~Attack~~ Action (Draft Complete)
-  * Attacker
-  * Target
+  * ~~Attacker~~ Player (Draft Complete)
+  * ~~Target~~ Player
   * GameState
 
 ## Things which depend on port priority:

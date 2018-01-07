@@ -43,6 +43,7 @@ const Player = (function() {
   const PROPERTIES = {
     name: 'string', //Player 1, 2, etc. Maybe let people enter their tags
     fighter: 'object', //Instance of Fighter class
+    currentAction: 'object', //Instance of Action class.
     port: 'number', //Determines things like simultaneous footstools and ledge grabs
     /* I'm not exactly sure what will be animation and what will be state, or if
      * we should even have both, but what I'm looking to cover here are
@@ -57,6 +58,8 @@ const Player = (function() {
 
     position: 'object',
     velocity: 'object',
+
+    analogueStickPosition: 'object'
   };
 
   return class Player {
