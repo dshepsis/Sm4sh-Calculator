@@ -16,9 +16,10 @@ This tool is not yet functional. You cannot really use it.
 * The attributes files also contain air acceleration, but only the max additional value, not the base value.
 * ~~Implement the following classes~~:
   * Fighter (Draft Complete)
-  * ~~Attack~~ Action (Draft Complete)
+  * ~~Attack~~ Action and Hitbox (Draft Complete)
   * ~~Attacker~~ Player (Draft Complete)
   * ~~Target~~ Player
+  * ~~GameState~~ Game (Draft Complete)
 
 ## Things which depend on port priority:
 Credit to Kurogane Hammer:
