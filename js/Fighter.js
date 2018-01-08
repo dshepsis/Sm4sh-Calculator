@@ -49,10 +49,12 @@ const Fighter = (function() {
     airSpeed: 'number',
     fallSpeed: 'number',
     fastFallSpeed: 'number',
+    gravity: 'number',
     baseAirAcceleration: 'number',
     maxAdditionalAirAcceleration: 'number',
-    gravity: 'number',
+    airFriction: 'number',
     shAirTime: 'number',
+    fhAirTime: 'number',
     jumps: 'number',
     wallJump: 'boolean',
     wallCling: 'boolean',
@@ -61,15 +63,15 @@ const Fighter = (function() {
     jumpsquat: 'number',
     softLandingLag: 'number',
     hardLandingLag: 'number',
-    fhAirTime: 'number',
     traction: 'number',
-    airFriction: 'number',
     initialDash: 'number',
     runAcceleration: 'number',
     runDeceleration: 'number',
     jumpHeight: 'number',
     hopHeight: 'number',
-    airJumpHeight: 'number'
+    airJumpHeight: 'number',
+
+    overrides: 'object', //Object containing functions which cover special cases 
   };
 
   return class Fighter {

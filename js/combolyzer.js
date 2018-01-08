@@ -1,21 +1,5 @@
 'use strict';
 
-/* eslint-disable */
-const lucarioUthrow = Object.freeze({
-  LaunchFrame: 17,
-  FAF: 48,
-  BKB: 70,
-  KBG: 70,
-  Angle: 88,
-  Base_DMG: [6, 7],
-  Total_Base_DMG: 11,
-});
-
-const attacker = Object.freeze({
-  name: "Lucario"
-});
-/* eslint-enable */
-
 function HitAdvantage(hitstun, hitframe, faf) {
   return hitstun - (faf - (hitframe + 1));
 }
@@ -287,25 +271,28 @@ class Knockback {
  * - launch_rate
  */
 
-function VSKB(
+/*function VSKB_OLD(
   percent, base_damage, damage, weight, kbg, bkb, gravity, fall_speed, r,
   stalingQueue, ignoreStale, attacker_percent, angle, in_air, windbox,
   electric, set_weight, stick, launch_rate
 ) {
-  const staleness = StaleNegation(stalingQueue, ignoreStale);
 
+  const staleness = StaleNegation(stalingQueue, ignoreStale);
   const targetDamageAfterHit = percent + damage * staleness;
-  let baseKB = targetDamageAfterHit * base_damage * (1 - (1 - staleness) * 0.3);
-  baseKB /= 20;
-  baseKB += targetDamageAfterHit / 10;
-  baseKB *= 1.4 * (200 / (weight + 100));
-  baseKB += 18;
-  baseKB *= kbg / 100;
-  baseKB += bkb;
-  baseKB *= r * Rage(attacker_percent);
+
+  let initKB = targetDamageAfterHit * base_damage * (1 - (1 - staleness) * 0.3);
+  initKB /= 20;
+  initKB += targetDamageAfterHit / 10;
+  initKB *= 1.4 * (200 / (weight + 100));
+  initKB += 18;
+  initKB *= kbg / 100;
+  initKB += bkb;
+  initKB *= r * Rage(attacker_percent);
+  //r = 0.85 for crouch cancel, 1.2 for hitting someone charging a smash attack
+
 
   return new Knockback(
-    baseKB,
+    initKB,
     angle,
     gravity,
     fall_speed,
@@ -316,6 +303,96 @@ function VSKB(
     set_weight,
     stick,
     launch_rate
+  );
+}*/
+
+function arrSum(arr, initVal=0) {
+  const len = arr.length;
+  let sum = initVal;
+  for (let i = 0; i < len; ++i) sum += arr[i];
+  return sum;
+}
+
+function VSKB(attackingPlayer, targetPlayer, game) {
+  console.warn(attackingPlayer);
+  const {
+    stalingQueue,
+    damageGivenMultiplier,
+    percent: atkrPercent,
+    currentAction: attack,
+    fighter: atkrFighter,
+  } = attackingPlayer;
+
+  const {overrides: atkrOverrides} = atkrFighter;
+
+  /* Lucario's Aura effect modifies the base damage of his attacks: */
+  const hitboxDamages = attack.hitboxes.map(hbx=>{
+    let dmg = hbx.baseDamage;
+    if (atkrOverrides.baseDamage) {
+      dmg = atkrOverrides.baseDamage(dmg, attackingPlayer, targetPlayer, game);
+    }
+    return dmg;
+  });
+
+  const {
+    baseKnockback,
+    knockbackGrowth,
+    angle,
+  } = lastValue(attack.hitboxes);
+
+  const {
+    damageTakenMultiplier,
+    analogueStickPosition,
+    percent: trgtPercent,
+    fighter: trgtFighter,
+    animation: trgtAnim,
+    state: trgtState,
+  } = targetPlayer;
+
+  const {
+    gravity,
+    fallSpeed,
+    weight: trgtWeight,
+  } = trgtFighter;
+
+  const {ignoreStaling, launchRate} = game;
+
+  const staleness = StaleNegation(stalingQueue, ignoreStaling);
+  const totalHitboxDmg = (
+    arrSum(hitboxDamages)*
+    damageGivenMultiplier*
+    damageTakenMultiplier*
+    staleness
+  );
+  const trgtPercentAfterHit = trgtPercent + totalHitboxDmg;
+  const launchDamage = lastValue(hitboxDamages);
+
+  let initKB = trgtPercentAfterHit * launchDamage * (1 - (1 - staleness) * 0.3);
+  initKB /= 20;
+  initKB += trgtPercentAfterHit / 10;
+  initKB *= 1.4 * (200 / (trgtWeight + 100));
+  initKB += 18;
+  initKB *= knockbackGrowth / 100;
+  initKB += baseKnockback;
+  initKB *= Rage(atkrPercent);
+
+  let overallMultiplier = 1;
+  if (trgtAnim === 'crouching') overallMultiplier = 0.85;
+  else if (trgtAnim === 'smashCharge') overallMultiplier = 1.2;
+  initKB *= overallMultiplier;
+
+  return new Knockback(
+    initKB,
+    angle,
+    gravity,
+    fallSpeed,
+    trgtState.includes('inAir'),
+    false, //Is this hitbox a windbox?
+    false, //Is this hitbox electric?
+    trgtPercentAfterHit,
+    false, //Is this hitbox set_weight?
+    analogueStickPosition,
+    launchRate
   );
 }
 
@@ -357,7 +434,8 @@ function GetAngle(X, Y) {
   return angle;
 }
 
-function Aura(percent, stock_dif, game_format) {
+/*
+function Aura_Old(percent, stock_dif, game_format) {
   if (stock_dif === undefined) {
     stock_dif = "0";
   }
@@ -439,6 +517,98 @@ function Aura(percent, stock_dif, game_format) {
     aura = max;
   }
   return aura;
+}*/
+
+function Aura(lucarioPlayer, game) {
+  const lucStockCount = lucarioPlayer.stockCount;
+  let highestOppStockCount = 0;
+  for (const opp of game.players) {
+    if (opp === lucarioPlayer) continue;
+    const oppStockCount = opp.stockCount;
+    if (oppStockCount > highestOppStockCount) {
+      highestOppStockCount = oppStockCount;
+    }
+  }
+  const stockDiff = lucStockCount - highestOppStockCount;
+  const gameFormat = (game.players.length === 2) ? 'Singles' : 'Other';
+
+  const lucPercent = lucarioPlayer.percent;
+  let aura = 0;
+  if (lucPercent <= 70) {
+    aura = (66 + ((17.0 / 35.0) * lucPercent)) / 100;
+  } else if (lucPercent <= 190) {
+    aura = (100 + ((7.0 / 12.0) * (lucPercent - 70))) / 100;
+  } else {
+    aura = 1.7;
+  }
+
+  //Stock difference data by KuroganeHammer, @A2E_smash and @Rmenaut, https://twitter.com/KuroganeHammer/status/784017200721965057
+  //For Doubles https://twitter.com/KuroganeHammer/status/784372918331383808
+  let anubisMult = 1;
+  let min = 0.6;
+  let max = 1.7;
+  if (stockDiff === 0) {
+    return aura;
+  }
+  if (gameFormat === "Singles") {
+    switch (stockDiff) {
+      case -2:
+        anubisMult = 1.3333;
+        min = 0.88;
+        max = 1.8;
+        break;
+      case -1:
+        anubisMult = 1.142;
+        min = 0.753;
+        max = 1.8;
+        break;
+      case +1:
+        anubisMult = 0.8888;
+        max = 1.51;
+        break;
+      case +2:
+        anubisMult = 0.8;
+        max = 1.36;
+        break;
+      default:
+        throw new Error(
+          "Got more than +- 2 stock difference in Aura calculation! "+
+          `Stock difference was ${stockDiff}.`
+        );
+    }
+  } else {
+    switch (stockDiff) {
+      case -2:
+        anubisMult = 2;
+        min = 1.32;
+        max = 1.8;
+        break;
+      case -1:
+        anubisMult = 1.3333;
+        min = 0.88;
+        max = 1.8;
+        break;
+      case +1:
+        anubisMult = 0.8;
+        max = 1.36;
+        break;
+      case +2:
+        anubisMult = 0.6333;
+        max = 1.076;
+        break;
+      default:
+        throw new Error(
+          "Got more than +- 2 stock difference in Aura calculation!"
+        );
+    }
+  }
+  aura *= anubisMult;
+  if (aura < min) {
+    aura = min;
+  } else if (aura > max) {
+    aura = max;
+  }
+  return aura;
 }
 
 function StaleNegation(queue, ignoreStale) {
@@ -458,9 +628,233 @@ function StaleNegation(queue, ignoreStale) {
   return s;
 }
 
+/* Returns an array of given length with every index set to the given value */
+function fillArr(value, length) {
+  const arr = [];
+  for (let i = 0; i < length; ++i) arr[i] = value;
+  return arr;
+}
+
 /*************\
 |* DEMO BELOW *|
 \*************/
+
+/* Note: this is similar to react-proptypes and I may replace it later. */
+function validateProperties(obj, propTypes, errMsgOptions) {
+  /* A prototype function is used here in-case obj does not
+   * have Object as it's prototype (e.g. it was created using
+   * `Object.create(null)`) */
+  const hasProperty = (obj, prop)=>{
+    return Object.prototype.hasOwnProperty.call(obj, prop);
+  };
+
+  /* Check that obj has all of the keys that propTypes does: */
+  for (const propName of Object.keys(propTypes)) {
+    if (!hasProperty(obj, propName)) {
+      throw new TypeError(
+        `${errMsgOptions.varName} must have a property called '${propName}.'`
+      );
+    }
+    const expectedType = propTypes[propName];
+    const givenPropValue = obj[propName];
+    const givenType = (typeof givenPropValue);
+    if (expectedType !== givenType) {
+      throw new TypeError(
+        `${errMsgOptions.varName} had an invalid type for property `+
+        `'${propName}'. Expected ${expectedType}. Received ${givenType}.`
+      );
+    }
+  }
+  /* Check that obj has no additional keys: */
+  for (const propName of Object.keys(obj)) {
+    if (!hasProperty(propTypes, propName)) {
+      throw new TypeError(
+        `${errMsgOptions.varName} has an unrecognized property '${propName}.'`
+      );
+    }
+  }
+  return obj;
+}
+
+/**
+ * A class for storing attributes of fighters. This is for data which is
+ * inherent to a character, like weight or the ability to crawl. In-game
+ * information like percent and velocity are stored in the Attacker class.
+ */
+const Fighter = (function() {
+  const PROPERTIES = {
+    name: 'string',
+    weight: 'number',
+    runSpeed: 'number',
+    walkSpeed: 'number',
+    airSpeed: 'number',
+    fallSpeed: 'number',
+    fastFallSpeed: 'number',
+    baseAirAcceleration: 'number',
+    maxAdditionalAirAcceleration: 'number',
+    airFriction: 'number',
+    gravity: 'number',
+    shAirTime: 'number',
+    fhAirTime: 'number',
+    jumps: 'number',
+    wallJump: 'boolean',
+    wallCling: 'boolean',
+    crawl: 'boolean',
+    tether: 'boolean',
+    jumpsquat: 'number',
+    softLandingLag: 'number',
+    hardLandingLag: 'number',
+    traction: 'number',
+    initialDash: 'number',
+    runAcceleration: 'number',
+    runDeceleration: 'number',
+    jumpHeight: 'number',
+    hopHeight: 'number',
+    airJumpHeight: 'number',
+
+    overrides: 'object', //Object containing functions which cover special cases
+  };
+
+  return class Fighter {
+    constructor(fighterObj) {
+      validateProperties(
+        fighterObj,
+        PROPERTIES,
+        {varName: "Parameter to Fighter Constructor"}
+      );
+      Object.assign(this, fighterObj);
+      Object.freeze(this);
+    }
+  };
+}());
+
+/**
+ * A class for storing attributes of attacks and other actions such as jumps.
+ * Contains only static data, not state (e.g. charged frames).
+ */
+const Action = (function() {
+  const PROPERTIES = {
+    name: 'string',
+    id: 'string', //Idk what these should be yet
+    hitboxActive: 'object', //Array of frame numbers
+    hitboxes: 'object', //Array of Hitbox objects
+    faf: 'number',
+    landingLag: 'number', //Maybe find a way to make this kind of thing optional
+    autoCancel: 'number',
+  };
+
+  return class Action {
+    constructor(actionObj) {
+      validateProperties(
+        actionObj,
+        PROPERTIES,
+        {varName: "Parameter to Action Constructor"}
+      );
+      Object.assign(this, actionObj);
+      Object.freeze(this);
+    }
+  };
+}());
+
+/**
+ * A class for storing in-game properties of a fighter, including percent,
+ * position, animation, etc.
+ */
+const Player = (function() {
+  const PROPERTIES = {
+    name: 'string', //Player 1, 2, etc. Maybe let people enter their tags
+    fighter: 'object', //Instance of Fighter class
+    currentAction: 'object', //Instance of Action class.
+    port: 'number', //Determines things like simultaneous footstools and ledge grabs
+    stockCount: 'number', //Used for Lucario's Aura effect
+    damageGivenMultiplier: 'number',
+    damageTakenMultiplier: 'number',
+
+    /* I'm not exactly sure what will be animation and what will be state, or if
+     * we should even have both, but what I'm looking to cover here are
+     * conditions like "in the air" "dash start" or "jab endlag". Frame counts
+     * into those animations may also need to be stored. */
+    animation: 'string',
+    frameOfAnimation: 'number',
+    state: 'object',
+
+    percent: 'number',
+    stalingQueue: 'object',
+
+    position: 'object',
+    velocity: 'object',
+
+    analogueStickPosition: 'object'
+  };
+
+  return class Player {
+    constructor(playerObj) {
+      validateProperties(
+        playerObj,
+        PROPERTIES,
+        {varName: "Parameter to Player Constructor"}
+      );
+      Object.assign(this, playerObj);
+      /* All properties are mutable */
+    }
+  };
+}());
+
+/**
+ * A class for storing data which affects gameplay but isn't part of a player or
+ * action. e.g. launch-rate.
+ */
+const Game = (function() {
+  const PROPERTIES = {
+    players: 'object', //An array of Player instances
+    mode: 'string', //Stock / Time / Coin, etc.
+    launchRate: 'number', //Genesis 0.9x lul
+    ignoreStaling: 'boolean'
+  };
+
+  return class Game {
+    constructor(gameObj) {
+      validateProperties(
+        gameObj,
+        PROPERTIES,
+        {varName: "Parameter to Game Constructor"}
+      );
+      Object.assign(this, gameObj);
+      /* All properties are mutable */
+    }
+  };
+}());
+
+/**
+ * A class for storing attributes of hitboxes
+ */
+const Hitbox = (function() {
+  const PROPERTIES = {
+    id: 'number', //Lower ID takes priority
+    prevLocation: 'object', //XY coordinate of hitbox center last frame
+    currLocation: 'object', //Coordinate this frame
+    classification: 'string', //Normal, aerial, special, throw, etc.
+    baseDamage: 'number',
+    baseKnockback: 'number',
+    knockbackGrowth: 'number',
+    angle: 'number',
+    weightDependent: 'boolean',
+    effects: 'object', //Electric, Fire, etc.
+    properties: 'object', //Unblockable, disabled hitlag, etc.
+  };
+
+  return class Hitbox {
+    constructor(hitboxObj) {
+      validateProperties(
+        hitboxObj,
+        PROPERTIES,
+        {varName: "Parameter to Hitbox Constructor"}
+      );
+      Object.assign(this, hitboxObj);
+      Object.freeze(this);
+    }
+  };
+}());
 
 /** @daniel
  * Moveset data is from $scope.moveset, which is an array.
@@ -471,132 +865,184 @@ function StaleNegation(queue, ignoreStale) {
  * call, which manually parses out the preDamage by adding up all the hitboxes
  * before the last one. */
 
-const uthrowAPIReturn = {
-  InstanceId: "598e70b44696590bf023d58a",
-  Name: "Uthrow",
-  OwnerId: 23,
-  Owner: "Lucario",
-  HitboxActive: null,
-  FirstActionableFrame: null,
-  BaseDamage: "5, 6",
-  Angle: "88",
-  BaseKnockBackSetKnockback: "70",
-  LandingLag: null,
-  AutoCancel: null,
-  KnockbackGrowth: "70",
-  MoveType: "throw",
-  IsWeightDependent: false,
-  Links: [
-    {
-      Rel: "self",
-      Href: "https://beta-api-kuroganehammer.azurewebsites.net/api/moves/598e70b44696590bf023d58a"
-    },
-    {
-      Rel: "character",
-      Href: "https://beta-api-kuroganehammer.azurewebsites.net/api/characters/name/Lucario"
-    }
-  ]
-};
-const lucarioPercent = 0;
-const oppStartingPercent = 0;
-const damageAppliedBeforeThrowLauncher = 5; //uthrow does 5%, then launches with 6%
+const Lucario = new Fighter({
+  name: 'Lucario',
+  weight: 99,
+  runSpeed: 1.55,
+  walkSpeed: 1.05,
+  airSpeed: 1.09,
+  fallSpeed: 1.68,
+  fastFallSpeed: 2.688,
+  gravity: 0.084,
+  baseAirAcceleration: 0,
+  maxAdditionalAirAcceleration: 0.7,
+  airFriction: 0.005,
+  shAirTime: 41, //Frames
+  fhAirTime: 62,
+  jumps: 2,
+  wallJump: true,
+  wallCling: true,
+  crawl: true,
+  tether: false,
+  jumpsquat: 5, //Frames
+  softLandingLag: 2,
+  hardLandingLag: 4,
+  traction: 0.0736,
+  initialDash: 1.8,
+  runAcceleration: 0.15,
+  runDeceleration: 0.04,
+  jumpHeight: 37.619999,
+  hopHeight: 18.193617,
+  airJumpHeight: 37.619999,
 
-/* Move base damage * smash charge multiplier * aura multiplier */
-const throwLauncherBaseDamage = 6 * Aura(lucarioPercent, 0, 'Singles');
-/* base_damage * attacker damage dealt multiplier * target damage received multiplier: */
-const throwLauncherRealDamage = throwLauncherBaseDamage * 1;
-
-
-const throwLauncherKBG = Number(uthrowAPIReturn.KnockbackGrowth);
-const throwLauncherBKB = Number(uthrowAPIReturn.BaseKnockBackSetKnockback);
-const throwLauncherAngle = Number(uthrowAPIReturn.Angle);
-
-/* The staling queue is an array of 9 boolean values. I asssume no staling: */
-const stalingQueue = [false, false, false, false, false, false, false, false, false];
-const ignoreStaling = false; //Never used
-
-const set_weight = false;
-
-/* This is ordinarily a "Character" object, which has its own class: */
-const target = Object.freeze({
-  "display_name": "Bayonetta",
-  "modifier": {
-    "name": "Normal",
-    "damage_dealt": 1,
-    "damage_taken": 1,
-    "kb_dealt": 1,
-    "kb_received": 1,
-    "gravity": 1,
-    "fall_speed": 1,
-    "shield": 1,
-    "air_friction": 1,
-    "traction": 1
-  },
-  "modifiers": [],
-  "name": "Bayonetta",
-  "api_name": "Bayonetta",
-  "attributes": {
-    "name": "Bayonetta",
-    "weight": 84,
-    "run_speed": 1.6,
-    "walk_speed": 0.9,
-    "air_speed": 0.97,
-    "fall_speed": 1.77,
-    "fast_fall_speed": 2.832,
-    "air_acceleration": 0.085,
-    "gravity": 0.12,
-    "sh_air_time": 38,
-    "jumps": 2,
-    "wall_jump": true,
-    "wall_cling": true,
-    "crawl": false,
-    "tether": false,
-    "jumpsquat": 4,
-    "soft_landing_lag": 2,
-    "hard_landing_lag": 4,
-    "fh_air_time": 54,
-    "traction": 0.055,
-    "gravity2": 0.015,
-    "air_friction": 0.008,
-    "initial_dash": 1.7,
-    "run_acceleration": 0.0942,
-    "run_deceleration": 0.04,
-    "jump_height": 39,
-    "hop_height": 21.354742,
-    "air_jump_height": 42
-  },
-  "icon": "./img/stock_icons/stock_90_bayonetta_01.png"
+  overrides: {},
 });
 
-/* Copied from calculator.js: */
-const vskb = VSKB(
-  oppStartingPercent + (damageAppliedBeforeThrowLauncher * StaleNegation(stalingQueue, ignoreStaling)), //% before launcher damage
-  throwLauncherBaseDamage, //Move Base damage * aura
-  throwLauncherRealDamage,
-  set_weight ? 100 : target.attributes.weight,
-  throwLauncherKBG,
-  throwLauncherBKB,
-  target.attributes.gravity * target.modifier.gravity,
-  target.attributes.fall_speed * target.modifier.fall_speed,
-  1, // Knockback multiplier, 0.85 for crouch cancel, 1.2 for interrupted smash attack charge, 1 for anything else
-  stalingQueue, // 9-element boolean array
-  false, // Ignore staling, set to false.
-  lucarioPercent, // Attacker %
-  throwLauncherAngle,
-  false, //Target is in air
-  false, // Attack is a windbox
-  false, // Attack has the electric effect
-  set_weight, // Set to false by me above
-  { X: 0, Y: 0 }, // Stick position
-  1 // Launch rate. 1 unless it's Genesis
-);
+/* This may be the syntax for non-standard formulas, like Lucario's aura:
+ * Fighter.overrides.modifiedProperty = function (
+ *   property, fighterPlayer, opponentPlayer, Game
+ * )
+ */
+Lucario.overrides.baseDamage = function (
+  origBaseDamage, LucarioPlayer, targetPlayer, game
+) {
+  const aura = Aura(LucarioPlayer, game);
+  return (origBaseDamage * aura);
+};
 
-const uthrowHitFrame = 17;
-const uthrowFAF = 38;
+const Marth = new Fighter({
+  name: 'Marth',
+  weight: 90,
+  runSpeed: 1.785,
+  walkSpeed: 1.5,
+  airSpeed: 1.02,
+  fallSpeed: 1.58,
+  fastFallSpeed: 2.528,
+  gravity: 0.075,
+  baseAirAcceleration: 0.1,
+  maxAdditionalAirAcceleration: 0.7,
+  airFriction: 0.005,
+  shAirTime: 41, //Frames
+  fhAirTime: 61,
+  jumps: 2,
+  wallJump: false,
+  wallCling: false,
+  crawl: false,
+  tether: false,
+  jumpsquat: 5, //Frames
+  softLandingLag: 2,
+  hardLandingLag: 4,
+  traction: 0.055,
+  initialDash: 1.5,
+  runAcceleration: 0.082,
+  runDeceleration: 0.01,
+  jumpHeight: 33.660133,
+  hopHeight: 16.263107,
+  airJumpHeight: 33.660133,
+
+  overrides: {},
+});
+
+const lucarioUthrowPreThrowHitbox = new Hitbox({
+  id: 0,
+  prevLocation: [0, 0], //I don't know locations yet
+  currLocation: [0, 0],
+  classification: 'pre-throw',
+  baseDamage: 5,
+  baseKnockback: 60,
+  knockbackGrowth: 180,
+  angle: 361,
+  weightDependent: false,
+  effects: ['Aura'],
+  properties: ['Cannot Clank', 'Cannot rebound'],
+});
+
+const lucarioUthrowLauncherHitbox = new Hitbox({
+  id: 0,
+  prevLocation: [0, 0], //I don't know locations yet
+  currLocation: [0, 0],
+  classification: 'throw',
+  baseDamage: 6,
+  baseKnockback: 70,
+  knockbackGrowth: 70,
+  angle: 88,
+  weightDependent: false,
+  effects: ['Aura'],
+  properties: [],
+});
+
+const lucarioUthrow = new Action({
+  name: 'Up Throw',
+  id: 'UTHROW_ID', //Idk what these should be yet
+  hitboxActive: [16, 17],
+  hitboxes: [lucarioUthrowPreThrowHitbox, lucarioUthrowLauncherHitbox],
+  faf: 38,
+  landingLag: NaN,
+  autoCancel: NaN,
+});
+
+/* The staling queue is an array of 9 boolean values. I asssume no staling: */
+const stalingQueue = fillArr(false, 9);
+
+const p1Lucario = new Player({
+  name: 'Player 1 - Lucario',
+  fighter: Lucario,
+  currentAction: lucarioUthrow,
+  port: 1,
+  stockCount: 2,
+  damageGivenMultiplier: 1,
+  damageTakenMultiplier: 1,
+  animation: 'uthrow',
+  frameOfAnimation: NaN,
+  state: null,
+
+  percent: 0,
+  stalingQueue: stalingQueue,
+
+  position: [0, 0],
+  velocity: [0, 0],
+
+  analogueStickPosition: [0, 0],
+});
+
+const p2Marth = new Player({
+  name: 'Player 2 - Marth',
+  fighter: Marth,
+  currentAction: null,
+  port: 1,
+  stockCount: 2,
+  damageGivenMultiplier: 1,
+  damageTakenMultiplier: 1,
+  animation: 'STANDING_ERRRRRRRRRRRR',
+  frameOfAnimation: NaN,
+  state: [],
+
+  percent: 0,
+  stalingQueue: stalingQueue,
+
+  position: [0, 0],
+  velocity: [0, 0],
+
+  analogueStickPosition: [0, 0],
+});
+
+const gameSetup = new Game({
+  players: [p1Lucario, p2Marth],
+  mode: 'Singles',
+  launchRate: 1,
+  ignoreStaling: false,
+});
+
+function lastValue(arr, fromLast = 0) {
+  return arr[arr.length-fromLast-1];
+}
+
+/* Copied from calculator.js: */
+const vskb = VSKB(p1Lucario, p2Marth, gameSetup);
 const hitAdv = HitAdvantage(
   vskb.hitstun,
-  uthrowHitFrame,
-  uthrowFAF
+  lastValue(lucarioUthrow.hitboxActive),
+  lucarioUthrow.faf
 );
 console.log(`Hitstun: ${vskb.hitstun}`);
 console.log(`Hit Advantage: ${hitAdv}`);

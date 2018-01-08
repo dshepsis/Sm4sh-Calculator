@@ -42,16 +42,12 @@ function validateProperties(obj, propTypes, errMsgOptions) {
 const Action = (function() {
   const PROPERTIES = {
     name: 'string',
-    id: 'string',
-    classification: 'string', //Normal, aerial, special, throw, etc.
-    baseDamage: 'number',
-    knockbackGrowth: 'number',
-    baseKnockBack: 'number',
-    hitboxActive: 'object', //Array
+    id: 'string', //Idk what these should be yet
+    hitboxActive: 'object', //Array of frame numbers
+    hitboxes: 'object', //Array of Hitbox objects
     faf: 'number',
     landingLag: 'number', //Maybe find a way to make this kind of thing optional
     autoCancel: 'number',
-    weightDependent: 'boolean',
   };
 
   return class Action {

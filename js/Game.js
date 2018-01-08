@@ -36,44 +36,25 @@ function validateProperties(obj, propTypes, errMsgOptions) {
 }
 
 /**
- * A class for storing in-game properties of a fighter, including percent,
- * position, animation, etc.
+ * A class for storing data which affects gameplay but isn't part of a player or
+ * action. e.g. launch-rate.
  */
-const Player = (function() {
+const Game = (function() {
   const PROPERTIES = {
-    name: 'string', //Player 1, 2, etc. Maybe let people enter their tags
-    fighter: 'object', //Instance of Fighter class
-    currentAction: 'object', //Instance of Action class.
-    port: 'number', //Determines things like simultaneous footstools and ledge grabs
-    stockCount: 'number', //Used for Lucario's Aura effect
-    percent: 'number',
-    damageGivenMultiplier: 'number',
-    damageTakenMultiplier: 'number',
-    stalingQueue: 'object',
-
-    /* I'm not exactly sure what will be animation and what will be state, or if
-     * we should even have both, but what I'm looking to cover here are
-     * conditions like "in the air" "dash start" or "jab endlag". Frame counts
-     * into those animations may also need to be stored. */
-    animation: 'string',
-    frameOfAnimation: 'number',
-    state: 'object',
-
-
-    position: 'object',
-    velocity: 'object',
-
-    analogueStickPosition: 'object'
+    players: 'object', //An array of Player instances
+    mode: 'string', //Stock / Time / Coin, etc.
+    launchRate: 'number', //Genesis 0.9x lul
+    ignoreStaling: 'boolean'
   };
 
-  return class Player {
-    constructor(playerObj) {
+  return class Game {
+    constructor(gameObj) {
       validateProperties(
-        playerObj,
+        gameObj,
         PROPERTIES,
-        {varName: "Parameter to Player Constructor"}
+        {varName: "Parameter to Game Constructor"}
       );
-      Object.assign(this, playerObj);
+      Object.assign(this, gameObj);
       /* All properties are mutable */
     }
   };
@@ -81,5 +62,5 @@ const Player = (function() {
 
 /* Attach to global object: */
 (function() {
-  this.Player = Player;
+  this.Game = Game;
 }());

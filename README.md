@@ -14,12 +14,11 @@ This tool is not yet functional. You cannot really use it.
 ## To do:
 * Remove `gravity2` from all attributes files. It is not used anywhere, and has no related functionality.
 * The attributes files also contain air acceleration, but only the max additional value, not the base value.
-* Implement the following classes:
+* ~~Implement the following classes~~:
   * Fighter (Draft Complete)
   * ~~Attack~~ Action (Draft Complete)
   * ~~Attacker~~ Player (Draft Complete)
   * ~~Target~~ Player
-  * GameState
 
 ## Things which depend on port priority:
 Credit to Kurogane Hammer:

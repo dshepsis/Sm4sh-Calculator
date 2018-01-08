@@ -36,50 +36,37 @@ function validateProperties(obj, propTypes, errMsgOptions) {
 }
 
 /**
- * A class for storing in-game properties of a fighter, including percent,
- * position, animation, etc.
+ * A class for storing attributes of hitboxes
  */
-const Player = (function() {
+const Hitbox = (function() {
   const PROPERTIES = {
-    name: 'string', //Player 1, 2, etc. Maybe let people enter their tags
-    fighter: 'object', //Instance of Fighter class
-    currentAction: 'object', //Instance of Action class.
-    port: 'number', //Determines things like simultaneous footstools and ledge grabs
-    stockCount: 'number', //Used for Lucario's Aura effect
-    percent: 'number',
-    damageGivenMultiplier: 'number',
-    damageTakenMultiplier: 'number',
-    stalingQueue: 'object',
-
-    /* I'm not exactly sure what will be animation and what will be state, or if
-     * we should even have both, but what I'm looking to cover here are
-     * conditions like "in the air" "dash start" or "jab endlag". Frame counts
-     * into those animations may also need to be stored. */
-    animation: 'string',
-    frameOfAnimation: 'number',
-    state: 'object',
-
-
-    position: 'object',
-    velocity: 'object',
-
-    analogueStickPosition: 'object'
+    id: 'number', //Lower ID takes priority
+    prevLocation: 'object', //XY coordinate of hitbox center last frame
+    currLocation: 'object', //Coordinate this frame
+    classification: 'string', //Normal, aerial, special, throw, etc.
+    baseDamage: 'number',
+    baseKnockback: 'number',
+    knockbackGrowth: 'number',
+    angle: 'number',
+    weightDependent: 'boolean',
+    effects: 'object', //Electric, Fire, etc.
+    properties: 'object', //Unblockable, disabled hitlag, etc.
   };
 
-  return class Player {
-    constructor(playerObj) {
+  return class Hitbox {
+    constructor(hitboxObj) {
       validateProperties(
-        playerObj,
+        hitboxObj,
         PROPERTIES,
-        {varName: "Parameter to Player Constructor"}
+        {varName: "Parameter to Hitbox Constructor"}
       );
-      Object.assign(this, playerObj);
-      /* All properties are mutable */
+      Object.assign(this, hitboxObj);
+      Object.freeze(this);
     }
   };
 }());
 
 /* Attach to global object: */
 (function() {
-  this.Player = Player;
+  this.Hitbox = Hitbox;
 }());
