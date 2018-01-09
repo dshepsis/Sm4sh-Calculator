@@ -314,7 +314,6 @@ function arrSum(arr, initVal=0) {
 }
 
 function VSKB(attackingPlayer, targetPlayer, game) {
-  console.warn(attackingPlayer);
   const {
     stalingQueue,
     damageGivenMultiplier,
@@ -1037,12 +1036,16 @@ function lastValue(arr, fromLast = 0) {
   return arr[arr.length-fromLast-1];
 }
 
-/* Copied from calculator.js: */
-const vskb = VSKB(p1Lucario, p2Marth, gameSetup);
-const hitAdv = HitAdvantage(
-  vskb.hitstun,
-  lastValue(lucarioUthrow.hitboxActive),
-  lucarioUthrow.faf
-);
-console.log(`Hitstun: ${vskb.hitstun}`);
-console.log(`Hit Advantage: ${hitAdv}`);
+function uthrowHitAdv(lucPercent, marthPercent) {
+  p1Lucario.percent = lucPercent;
+  p2Marth.percent = marthPercent;
+  const vskb = VSKB(p1Lucario, p2Marth, gameSetup);
+  const hitAdv = HitAdvantage(
+    vskb.hitstun,
+    lastValue(lucarioUthrow.hitboxActive),
+    lucarioUthrow.faf
+  );
+  return hitAdv;
+}
+
+console.log(uthrowHitAdv(0, 0));
