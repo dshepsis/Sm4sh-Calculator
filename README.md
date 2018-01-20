@@ -8,18 +8,12 @@ This tool is not yet functional. You cannot really use it.
 
 ## Planned Functionality:
 * Take two moves, and a frame delay between them, and provide a graph showing whether that combo is true frame-data-wise. X-axis is attacker %, Y-axis is defender %.
-* Given a move, search for followups, frame-traps, and 50/50s
+* Given a move, search for follow-ups, frame-traps, and 50/50s
 * Eventually parameterize movement and jumps to provide more information on whether combos may be true beyond just comparing frame-data.
 
 ## To do:
 * Remove `gravity2` from all attributes files. It is not used anywhere, and has no related functionality.
 * The attributes files also contain air acceleration, but only the max additional value, not the base value.
-* ~~Implement the following classes~~:
-  * Fighter (Draft Complete)
-  * ~~Attack~~ Action and Hitbox (Draft Complete)
-  * ~~Attacker~~ Player (Draft Complete)
-  * ~~Target~~ Player
-  * ~~GameState~~ Game (Draft Complete)
 
 ## Things which depend on port priority:
 Credit to Kurogane Hammer:
